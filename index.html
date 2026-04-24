@@ -1,33 +1,87 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <title>Meine Testseite</title>
-    <style>
-        body {
-            font-family: Arial;
-            text-align: center;
-            margin-top: 50px;
-            background-color: #f0f0f0;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>GitHub Explorer</title>
+  <style>
+    body {
+      font-family: Arial;
+      display: flex;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #left {
+      width: 30%;
+      background: #f4f4f4;
+      padding: 10px;
+      overflow-y: auto;
+      border-right: 1px solid #ccc;
+    }
+
+    #right {
+      width: 70%;
+      padding: 10px;
+    }
+
+    .file {
+      cursor: pointer;
+      padding: 5px;
+    }
+
+    .file:hover {
+      background: #ddd;
+    }
+
+    iframe {
+      width: 100%;
+      height: 95vh;
+      border: none;
+    }
+  </style>
 </head>
 <body>
 
-    <h1>Hallo von GitHub Pages 🚀</h1>
-    <p>Das ist meine erste getestete HTML-Datei!</p>
+<div id="left">
+  <h3>📁 Dateien</h3>
+  <div id="fileList">Lade...</div>
+</div>
 
-    <button onclick="zeigeNachricht()">Klick mich</button>
+<div id="right">
+  <h3>👁 Vorschau</h3>
+  <iframe id="viewer"></iframe>
+</div>
 
-    <script>
-        function zeigeNachricht() {
-            alert("Es funktioniert! 🎉");
-        }
-    </script>
+<script>
+const user = "kenk-jadev";
+const repo = "Game-02";
+
+async function loadFiles() {
+  const url = `https://api.github.com/repos/${user}/${repo}/contents/`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const list = document.getElementById("fileList");
+  list.innerHTML = "";
+
+  data.forEach(file => {
+    const div = document.createElement("div");
+    div.className = "file";
+    div.textContent = file.name;
+
+    div.onclick = () => {
+      if (file.type === "file") {
+        document.getElementById("viewer").src = file.download_url;
+      }
+    };
+
+    list.appendChild(div);
+  });
+}
+
+loadFiles();
+</script>
 
 </body>
 </html>
