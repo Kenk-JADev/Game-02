@@ -1,86 +1,170 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>GitHub Explorer</title>
-  <style>
-    body {
-      font-family: Arial;
-      display: flex;
-      height: 100vh;
-      margin: 0;
-    }
+<meta charset="UTF-8">
+<title>GitHub Explorer Pro</title>
 
-    #left {
-      width: 30%;
-      background: #f4f4f4;
-      padding: 10px;
-      overflow-y: auto;
-      border-right: 1px solid #ccc;
-    }
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
 
-    #right {
-      width: 70%;
-      padding: 10px;
-    }
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
 
-    .file {
-      cursor: pointer;
-      padding: 5px;
-    }
+/* SIDEBAR */
+#sidebar {
+    width: 320px;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(15px);
+    border-right: 1px solid rgba(255,255,255,0.1);
+    padding: 15px;
+    overflow-y: auto;
+}
 
-    .file:hover {
-      background: #ddd;
-    }
+/* MAIN VIEW */
+#main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
 
-    iframe {
-      width: 100%;
-      height: 95vh;
-      border: none;
-    }
-  </style>
+/* HEADER */
+header {
+    padding: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-weight: 600;
+}
+
+/* FILE ITEMS */
+.file {
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateX(5px);
+}
+
+/* ICON COLORS */
+.folder { color: #facc15; }
+.fileicon { color: #38bdf8; }
+
+/* VIEWER */
+iframe {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: white;
+    animation: fadeIn 0.4s ease;
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* LOADING */
+#loading {
+    opacity: 0.7;
+    font-size: 14px;
+}
+</style>
 </head>
+
 <body>
 
-<div id="left">
-  <h3>📁 Dateien</h3>
-  <div id="fileList">Lade...</div>
+<div id="sidebar">
+    <h3>📁 Repository</h3>
+    <div id="path">/</div>
+    <div id="list"><div id="loading">Lade Dateien...</div></div>
 </div>
 
-<div id="right">
-  <h3>👁 Vorschau</h3>
-  <iframe id="viewer"></iframe>
+<div id="main">
+    <header>👁 Vorschau</header>
+    <iframe id="viewer"></iframe>
 </div>
 
 <script>
-const user = "kenk-jadev";
+
+const user = "Kenk-JADev";
 const repo = "Game-02";
+let currentPath = "";
 
-async function loadFiles() {
-  const url = `https://api.github.com/repos/${user}/${repo}/contents/`;
+async function load(path = "") {
+    currentPath = path;
 
-  const res = await fetch(url);
-  const data = await res.json();
+    const list = document.getElementById("list");
+    list.innerHTML = "Lade...";
 
-  const list = document.getElementById("fileList");
-  list.innerHTML = "";
+    const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+    const res = await fetch(url);
+    const data = await res.json();
 
-  data.forEach(file => {
-    const div = document.createElement("div");
-    div.className = "file";
-    div.textContent = file.name;
+    if (!Array.isArray(data)) {
+        list.innerHTML = "❌ Fehler beim Laden";
+        console.log(data);
+        return;
+    }
 
-    div.onclick = () => {
-      if (file.type === "file") {
-        document.getElementById("viewer").src = file.download_url;
-      }
-    };
+    document.getElementById("path").innerText = "/" + path;
 
-    list.appendChild(div);
-  });
+    list.innerHTML = "";
+
+    // BACK BUTTON
+    if (path !== "") {
+        const back = document.createElement("div");
+        back.className = "file";
+        back.innerHTML = "⬅️ ..";
+        back.onclick = () => {
+            const parts = path.split("/");
+            parts.pop();
+            load(parts.join("/"));
+        };
+        list.appendChild(back);
+    }
+
+    data.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "file";
+
+        if (item.type === "dir") {
+            div.innerHTML = `<span class="folder">📁</span> ${item.name}`;
+            div.onclick = () => load(item.path);
+        } else {
+            div.innerHTML = `<span class="fileicon">📄</span> ${item.name}`;
+            div.onclick = () => openFile(item.download_url);
+        }
+
+        list.appendChild(div);
+    });
 }
 
-loadFiles();
+function openFile(url) {
+    const viewer = document.getElementById("viewer");
+    viewer.style.opacity = 0;
+
+    setTimeout(() => {
+        viewer.src = url;
+        viewer.style.opacity = 1;
+    }, 150);
+}
+
+load("");
+
 </script>
 
 </body>
